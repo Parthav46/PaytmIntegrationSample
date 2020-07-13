@@ -58,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
             body.put("mid", Constants.MERCHANT_ID);
             body.put("websiteName", Constants.WEBSITE);
             body.put("orderId", ORDER_ID);
-            body.put("callbackUrl", "https://merchant.com/callback");
 
             JSONObject txnAmount = new JSONObject();
             txnAmount.put("value", "1.00");
@@ -66,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
             JSONObject userInfo = new JSONObject();
             userInfo.put("custId", "CUST_001");
+
             body.put("txnAmount", txnAmount);
             body.put("userInfo", userInfo);
 
@@ -76,7 +76,6 @@ public class MainActivity extends AppCompatActivity {
              */
 
             String checksum = PaytmChecksum.generateSignature(body.toString(), Constants.MERCHANT_KEY);
-            Log.e("CHECKSUM", PaytmChecksum.verifySignature(body.toString(), Constants.MERCHANT_KEY, checksum) ? "MATCH" : "MISMATCH");
 
             JSONObject head = new JSONObject();
             head.put("signature", checksum);
@@ -92,10 +91,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     LoaderManager.LoaderCallbacks<JSONObject> httpRequestCallback = new LoaderManager.LoaderCallbacks<JSONObject>() {
+        String bodyData;
+
         @NonNull
         @Override
         public Loader<JSONObject> onCreateLoader(int id, @Nullable Bundle args) {
             assert args != null;
+            try {
+                JSONObject obj = new JSONObject(args.getString("data", ""));
+                bodyData = obj.getJSONObject("body").toString();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
             return new HttpRequestAsyncLoader(getBaseContext(), args.getString("url", null), args.getString("data", null), HttpRequestAsyncLoader.Request.POST);
         }
 
@@ -106,8 +113,15 @@ public class MainActivity extends AppCompatActivity {
             else {
                 System.out.println(data.toString());
                 try {
-                    System.out.println(data.getJSONObject("body").getString("txnToken"));
-                    PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", "https://merchant.com/callback");
+                    Log.i("CHECKSUM", data.getJSONObject("body").toString());
+                    Log.i("CHECKSUM", data.getJSONObject("head").getString("signature"));
+                    Log.e("CHECKSUM", PaytmChecksum.verifySignature(data.getJSONObject("body").toString(), Constants.MERCHANT_KEY, data.getJSONObject("head").getString("signature")) ? "MATCH" : "MISMATCH");
+                    Log.e("TXN_TOKEN", data.getJSONObject("body").getString("txnToken"));
+
+                    String host = "https://securegw.paytm.in/";
+                    String callBackUrl = host + "theia/paytmCallback?ORDER_ID=" + ORDER_ID;
+
+                    PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", callBackUrl);
                     TransactionManager transactionManager = new TransactionManager(paytmOrder, new PaytmPaymentTransactionCallback() {
                         @Override
                         public void onTransactionResponse(Bundle bundle) {
@@ -116,41 +130,47 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void networkNotAvailable() {
-
+                            Log.e("RESPONSE", "network not available");
                         }
 
                         @Override
                         public void onErrorProceed(String s) {
+                            Log.e("RESPONSE", "error proceed: " + s);
 
                         }
 
                         @Override
                         public void clientAuthenticationFailed(String s) {
+                            Log.e("RESPONSE", "client auth failed: " + s);
 
                         }
 
                         @Override
                         public void someUIErrorOccurred(String s) {
+                            Log.e("RESPONSE", "UI error occured: " + s);
 
                         }
 
                         @Override
                         public void onErrorLoadingWebPage(int i, String s, String s1) {
+                            Log.e("RESPONSE", "error loading webpage: " + s + "--" + s1);
 
                         }
 
                         @Override
                         public void onBackPressedCancelTransaction() {
+                            Log.e("RESPONSE", "back pressed");
 
                         }
 
                         @Override
                         public void onTransactionCancel(String s, Bundle bundle) {
+                            Log.e("RESPONSE", "transaction cancel: " + s);
 
                         }
                     });
                     transactionManager.startTransaction(activity, requestCode);
-                } catch (JSONException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
