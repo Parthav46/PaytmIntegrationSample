@@ -6,17 +6,19 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.loader.app.LoaderManager;
-import androidx.loader.content.Loader;
 
 import com.paytm.pgsdk.PaytmOrder;
 import com.paytm.pgsdk.PaytmPaymentTransactionCallback;
 import com.paytm.pgsdk.TransactionManager;
 
+import org.json.JSONException;
 import org.json.JSONObject;
+
+import io.github.parthav46.httphandler.HttpRequestCallback;
+import io.github.parthav46.httphandler.HttpResponseCallback;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -25,26 +27,6 @@ public class MainActivity extends AppCompatActivity {
     LoaderManager loaderManager;
 
     MainActivity activity;
-    LoaderManager.LoaderCallbacks<JSONObject> httpRequestCallback = new LoaderManager.LoaderCallbacks<JSONObject>() {
-        @NonNull
-        @Override
-        public Loader<JSONObject> onCreateLoader(int id, @Nullable Bundle args) {
-            assert args != null;
-            return new HttpRequestAsyncLoader(getBaseContext(), args.getString("url", null), args.getString("data", null), HttpRequestAsyncLoader.Request.POST);
-        }
-
-        @Override
-        public void onLoadFinished(@NonNull Loader<JSONObject> loader, JSONObject data) {
-            System.out.println("-----OUTPUT-----");
-            if (data == null) System.out.println("x----FAIL----x");
-            else processPaytmTransaction(data);
-        }
-
-        @Override
-        public void onLoaderReset(@NonNull Loader<JSONObject> loader) {
-
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +46,18 @@ public class MainActivity extends AppCompatActivity {
                 params.putString("url", url);
                 params.putString("data", data);
 
-                loaderManager.initLoader(0, params, httpRequestCallback);
+                loaderManager.initLoader(0, params, new HttpRequestCallback(getBaseContext(), new HttpResponseCallback() {
+                    @Override
+                    public void onResponse(String response) {
+                        if(response != null) {
+                            try {
+                                processPaytmTransaction(new JSONObject(response));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }));
             }
         });
     }
@@ -77,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
             body.put("mid", Constants.MERCHANT_ID);
             body.put("websiteName", Constants.WEBSITE);
             body.put("orderId", ORDER_ID);
+            body.put("callbackUrl", Constants.CALLBACK);
 
             JSONObject txnAmount = new JSONObject();
             txnAmount.put("value", "1.00");
@@ -126,10 +120,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e("CHECKSUM", PaytmChecksum.verifySignature(data.getJSONObject("body").toString(), Constants.MERCHANT_KEY, data.getJSONObject("head").getString("signature")) ? "MATCH" : "MISMATCH");
             Log.e("TXN_TOKEN", data.getJSONObject("body").getString("txnToken"));
 
-            String host = "https://securegw.paytm.in/";
-            String callBackUrl = host + "theia/paytmCallback?ORDER_ID=" + ORDER_ID;
-
-            PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", callBackUrl);
+            PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", Constants.CALLBACK);
             TransactionManager transactionManager = new TransactionManager(paytmOrder, new PaytmPaymentTransactionCallback() {
                 @Override
                 public void onTransactionResponse(Bundle bundle) {

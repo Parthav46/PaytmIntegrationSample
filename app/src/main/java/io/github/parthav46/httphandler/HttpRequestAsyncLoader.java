@@ -1,4 +1,4 @@
-package com.example.paytmapi;
+package io.github.parthav46.httphandler;
 
 import android.content.Context;
 
@@ -6,7 +6,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.loader.content.AsyncTaskLoader;
 
-import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStream;
@@ -14,7 +13,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class HttpRequestAsyncLoader extends AsyncTaskLoader<JSONObject> {
+public class HttpRequestAsyncLoader extends AsyncTaskLoader<String> {
 
     public enum  Request {
         GET, POST
@@ -49,9 +48,9 @@ public class HttpRequestAsyncLoader extends AsyncTaskLoader<JSONObject> {
 
     @Nullable
     @Override
-    public JSONObject loadInBackground() {
+    public String loadInBackground() {
         URL url;
-        JSONObject response = null;
+        String response = null;
 
         if(this.urlStr == null) return null;
         try {
@@ -71,7 +70,7 @@ public class HttpRequestAsyncLoader extends AsyncTaskLoader<JSONObject> {
             InputStream is = connection.getInputStream();
             BufferedReader responseReader = new BufferedReader(new InputStreamReader(is));
             if ((responseData = responseReader.readLine()) != null) {
-                response = new JSONObject(responseData);
+                response = responseData;
             }
 
             responseReader.close();
