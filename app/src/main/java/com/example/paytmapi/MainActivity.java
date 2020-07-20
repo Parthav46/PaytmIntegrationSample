@@ -141,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.i("CHECKSUM", data.getJSONObject("body").toString());
             Log.i("CHECKSUM", data.getJSONObject("head").getString("signature"));
-            Log.e("CHECKSUM", PaytmChecksum.verifySignature(data.getJSONObject("body").toString(), Constants.MERCHANT_KEY, data.getJSONObject("head").getString("signature")) ? "MATCH" : "MISMATCH");
             Log.e("TXN_TOKEN", data.getJSONObject("body").getString("txnToken"));
 
             PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", Constants.CALLBACK);
