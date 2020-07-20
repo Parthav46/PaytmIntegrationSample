@@ -27,10 +27,10 @@ public class HttpRequestCallback implements LoaderManager.LoaderCallbacks<String
     @Override
     public void onLoadFinished(@NonNull Loader<String> loader, String data) {
         callback.onResponse(data);
+        loader.reset();
     }
 
     @Override
     public void onLoaderReset(@NonNull Loader<String> loader) {
-
     }
 }

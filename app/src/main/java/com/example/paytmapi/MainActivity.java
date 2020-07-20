@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     final String ORDER_ID = "ID" + System.currentTimeMillis();
     final int requestCode = 2;
     LoaderManager loaderManager;
+    String bodyData = "";
 
     MainActivity activity;
 
@@ -39,20 +40,49 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.pay).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String url = "https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=" + Constants.MERCHANT_ID + "&orderId=" + ORDER_ID;
-                String data = getPaytmParams();
+                bodyData = getPaytmParams();
 
                 Bundle params = new Bundle();
-                params.putString("url", url);
-                params.putString("data", data);
+                params.putString("url", Constants.CHECKSUM);
+                params.putString("data", bodyData);
 
                 loaderManager.initLoader(0, params, new HttpRequestCallback(getBaseContext(), new HttpResponseCallback() {
                     @Override
                     public void onResponse(String response) {
                         if(response != null) {
                             try {
-                                processPaytmTransaction(new JSONObject(response));
-                            } catch (JSONException e) {
+
+                                JSONObject paytmParams = new JSONObject();
+
+                                JSONObject head = new JSONObject();
+
+                                String checksum = new JSONObject(response).getString("checksum");
+                                Log.e("checksum", checksum);
+                                head.put("signature", checksum);
+
+                                paytmParams.put("head", head);
+                                paytmParams.put("body", new JSONObject(bodyData));
+
+
+
+                                String url = "https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=" + Constants.MERCHANT_ID + "&orderId=" + ORDER_ID;
+                                Bundle params = new Bundle();
+                                params.putString("url", url);
+                                params.putString("data", paytmParams.toString());
+
+                                loaderManager.initLoader(1, params, new HttpRequestCallback(getBaseContext(), new HttpResponseCallback() {
+                                    @Override
+                                    public void onResponse(String response) {
+                                        if(response != null) {
+                                            try {
+                                                processPaytmTransaction(new JSONObject(response));
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    }
+                                }));
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
@@ -62,8 +92,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    String getPaytmParams() {
-        JSONObject paytmParams = new JSONObject();
+    String getPaytmParams () {
+        JSONObject paytmParams;
         try {
             JSONObject body = new JSONObject();
             body.put("requestType", "Payment");
@@ -88,13 +118,7 @@ public class MainActivity extends AppCompatActivity {
              * Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys
              */
 
-            String checksum = PaytmChecksum.generateSignature(body.toString(), Constants.MERCHANT_KEY);
-
-            JSONObject head = new JSONObject();
-            head.put("signature", checksum);
-
-            paytmParams.put("body", body);
-            paytmParams.put("head", head);
+            paytmParams = body;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -117,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.i("CHECKSUM", data.getJSONObject("body").toString());
             Log.i("CHECKSUM", data.getJSONObject("head").getString("signature"));
-            Log.e("CHECKSUM", PaytmChecksum.verifySignature(data.getJSONObject("body").toString(), Constants.MERCHANT_KEY, data.getJSONObject("head").getString("signature")) ? "MATCH" : "MISMATCH");
             Log.e("TXN_TOKEN", data.getJSONObject("body").getString("txnToken"));
 
             PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", Constants.CALLBACK);
