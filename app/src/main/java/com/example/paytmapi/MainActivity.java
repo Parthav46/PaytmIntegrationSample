@@ -17,7 +17,7 @@ import com.paytm.pgsdk.TransactionManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import io.github.parthav46.httphandler.HttpRequestCallback;
+import io.github.parthav46.httphandler.HttpRequest;
 import io.github.parthav46.httphandler.HttpResponseCallback;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,11 +42,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 bodyData = getPaytmParams();
 
-                Bundle params = new Bundle();
-                params.putString("url", Constants.CHECKSUM);
-                params.putString("data", bodyData);
-
-                loaderManager.initLoader(0, params, new HttpRequestCallback(getBaseContext(), new HttpResponseCallback() {
+                new HttpRequest(activity, Constants.CHECKSUM, HttpRequest.Request.POST, bodyData, new HttpResponseCallback() {
                     @Override
                     public void onResponse(String response) {
                         if(response != null) {
@@ -63,14 +59,9 @@ public class MainActivity extends AppCompatActivity {
                                 paytmParams.put("head", head);
                                 paytmParams.put("body", new JSONObject(bodyData));
 
-
-
                                 String url = "https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=" + Constants.MERCHANT_ID + "&orderId=" + ORDER_ID;
-                                Bundle params = new Bundle();
-                                params.putString("url", url);
-                                params.putString("data", paytmParams.toString());
 
-                                loaderManager.initLoader(1, params, new HttpRequestCallback(getBaseContext(), new HttpResponseCallback() {
+                                new HttpRequest(activity, url, HttpRequest.Request.POST, paytmParams.toString(), new HttpResponseCallback() {
                                     @Override
                                     public void onResponse(String response) {
                                         if(response != null) {
@@ -81,13 +72,13 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         }
                                     }
-                                }));
+                                }).execute();
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
                     }
-                }));
+                }).execute();
             }
         });
     }
