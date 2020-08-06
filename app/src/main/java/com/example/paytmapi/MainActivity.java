@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -17,15 +19,20 @@ import com.paytm.pgsdk.TransactionManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Locale;
+
 import io.github.parthav46.httphandler.HttpRequest;
 import io.github.parthav46.httphandler.HttpResponseCallback;
 
 public class MainActivity extends AppCompatActivity {
-
-    final String ORDER_ID = "ID" + System.currentTimeMillis();
     final int requestCode = 2;
+    String ORDER_ID;
     LoaderManager loaderManager;
     String bodyData = "";
+
+    TextView orderID;
+    EditText amount;
+    float value;
 
     MainActivity activity;
 
@@ -35,52 +42,65 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         this.activity = this;
+        ORDER_ID = "ID" + System.currentTimeMillis();
         loaderManager = LoaderManager.getInstance(this);
+
+        orderID = findViewById(R.id.orderid);
+        amount = findViewById(R.id.amount);
+
+        orderID.setText(ORDER_ID);
+        amount.setText(String.format(Locale.getDefault(), "%.2f", 1.00f));
 
         findViewById(R.id.pay).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                bodyData = getPaytmParams();
-
-                new HttpRequest(activity, Constants.CHECKSUM, HttpRequest.Request.POST, bodyData, new HttpResponseCallback() {
-                    @Override
-                    public void onResponse(String response) {
-                        if(response != null) {
-                            try {
-
-                                JSONObject paytmParams = new JSONObject();
-
-                                JSONObject head = new JSONObject();
-
-                                String checksum = new JSONObject(response).getString("checksum");
-                                Log.e("checksum", checksum);
-                                head.put("signature", checksum);
-
-                                paytmParams.put("head", head);
-                                paytmParams.put("body", new JSONObject(bodyData));
-
-                                String url = "https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=" + Constants.MERCHANT_ID + "&orderId=" + ORDER_ID;
-
-                                new HttpRequest(activity, url, HttpRequest.Request.POST, paytmParams.toString(), new HttpResponseCallback() {
-                                    @Override
-                                    public void onResponse(String response) {
-                                        if(response != null) {
-                                            try {
-                                                processPaytmTransaction(new JSONObject(response));
-                                            } catch (JSONException e) {
-                                                e.printStackTrace();
-                                            }
-                                        }
-                                    }
-                                }).execute();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }).execute();
+                startPayment();
             }
         });
+    }
+
+    void startPayment() {
+        bodyData = getPaytmParams();
+
+        new HttpRequest(activity, Constants.CHECKSUM, HttpRequest.Request.POST, bodyData, new HttpResponseCallback() {
+            @Override
+            public void onResponse(String response) {
+                if(response != null) {
+                    try {
+                        JSONObject paytmParams = new JSONObject();
+
+                        JSONObject head = new JSONObject();
+
+                        String checksum = new JSONObject(response).getString("checksum");
+                        Log.e("checksum", checksum);
+                        head.put("signature", checksum);
+
+                        paytmParams.put("head", head);
+                        paytmParams.put("body", new JSONObject(bodyData));
+
+                        String url = "https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=" + Constants.MERCHANT_ID + "&orderId=" + ORDER_ID;
+
+                        new HttpRequest(activity, url, HttpRequest.Request.POST, paytmParams.toString(), new HttpResponseCallback() {
+                            @Override
+                            public void onResponse(String response) {
+                                if(response != null) {
+                                    try {
+                                        processPaytmTransaction(new JSONObject(response));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    } finally {
+                                        ORDER_ID = "ID" + System.currentTimeMillis();
+                                        orderID.setText(ORDER_ID);
+                                    }
+                                }
+                            }
+                        }).execute();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).execute();
     }
 
     String getPaytmParams () {
@@ -94,7 +114,12 @@ public class MainActivity extends AppCompatActivity {
             body.put("callbackUrl", Constants.CALLBACK);
 
             JSONObject txnAmount = new JSONObject();
-            txnAmount.put("value", "1.00");
+            try{
+                value = Float.parseFloat(this.amount.getText().toString());
+            } catch (Exception e) {
+                value = 0f;
+            }
+            txnAmount.put("value", String.format(Locale.getDefault(), "%.2f", value));
             txnAmount.put("currency", "INR");
 
             JSONObject userInfo = new JSONObject();
@@ -134,7 +159,10 @@ public class MainActivity extends AppCompatActivity {
             Log.i("CHECKSUM", data.getJSONObject("head").getString("signature"));
             Log.e("TXN_TOKEN", data.getJSONObject("body").getString("txnToken"));
 
-            PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"), "1.00", Constants.CALLBACK);
+
+
+            PaytmOrder paytmOrder = new PaytmOrder(ORDER_ID, Constants.MERCHANT_ID, data.getJSONObject("body").getString("txnToken"),
+                    String.format(Locale.getDefault(), "%.2f", value), Constants.CALLBACK);
             TransactionManager transactionManager = new TransactionManager(paytmOrder, new PaytmPaymentTransactionCallback() {
                 @Override
                 public void onTransactionResponse(Bundle bundle) {
