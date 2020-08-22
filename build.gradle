@@ -16,6 +16,7 @@ allprojects {
     repositories {
         google()
         maven { url "https://artifactory.paytm.in/libs-release-local" }
+        maven { url 'https://jitpack.io' }
         jcenter()
     }
 }

@@ -21,8 +21,8 @@ import org.json.JSONObject;
 
 import java.util.Locale;
 
-import io.github.parthav46.httphandler.HttpRequest;
-import io.github.parthav46.httphandler.HttpResponseCallback;
+import io.github.parthav46.httprequest.HttpRequest;
+import io.github.parthav46.httprequest.HttpResponseCallback;
 
 public class MainActivity extends AppCompatActivity {
     final int requestCode = 2;
