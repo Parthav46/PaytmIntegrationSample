@@ -14,4 +14,10 @@ This repo consists of sample Android app project for using [Paytm All-in-One SDK
 - Uninstall release version of Paytm app if installed on your testing device and install the [Paytm Staging](https://drive.google.com/file/d/1BfvEa04KStQ0WDGG9L4Fd75lKJlrp1X9/view?usp=sharing) app instead. <br> 
     Login Credentials: <br>
     &emsp; Username:- 7777777777 <br>
-    &emsp; Password:- Paytm12345 
+    &emsp; Password:- Paytm12345
+    
+ ## Contributing Guidelines:
+- Fork the repo to your account and then clone it on your machine
+- Make a separate branch for the changes you make with a meaningful name
+- Commit your changes to the branch
+- Make a Pull Request to [master](../../tree/master) with PR body containing description of changes you made and link to its issue.
