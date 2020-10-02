@@ -1,5 +1,6 @@
 package com.example.paytmapi;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -60,6 +61,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void startPayment() {
+        final ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
+        progressDialog.setMessage("Making Payment....");
+        progressDialog.show();
         bodyData = getPaytmParams();
 
         new HttpRequest(activity, Constants.CHECKSUM, HttpRequest.Request.POST, bodyData, new HttpResponseCallback() {
@@ -83,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                         new HttpRequest(activity, url, HttpRequest.Request.POST, paytmParams.toString(), new HttpResponseCallback() {
                             @Override
                             public void onResponse(String response) {
-                                if(response != null) {
+                                if (response != null) {
                                     try {
                                         processPaytmTransaction(new JSONObject(response));
                                     } catch (JSONException e) {
@@ -93,11 +97,14 @@ public class MainActivity extends AppCompatActivity {
                                         orderID.setText(ORDER_ID);
                                     }
                                 }
+                                if (progressDialog.isShowing()) progressDialog.dismiss();
                             }
                         }).execute();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                } else {
+                    if (progressDialog.isShowing()) progressDialog.dismiss();
                 }
             }
         }).execute();

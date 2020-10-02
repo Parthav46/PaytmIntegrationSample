@@ -2,6 +2,6 @@
     <string name="app_name">Paytm Integration Sample</string>
     <string name="pay">Pay</string>
     <string name="orderid">Order ID:</string>
-    <string name="amount">Amount:</string>
     <string name="rupee_symbol">₹</string>
+    <string name="payment_img">payment_img</string>
 </resources>
