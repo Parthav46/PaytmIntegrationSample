@@ -1,5 +1,6 @@
 package com.example.paytmapi;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.loader.app.LoaderManager;
+import androidx.swiperefreshlayout.widget.CircularProgressDrawable;
 
 import com.paytm.pgsdk.PaytmOrder;
 import com.paytm.pgsdk.PaytmPaymentTransactionCallback;
@@ -60,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void startPayment() {
+        ProgressDialog progressDialog =new ProgressDialog(this);
+        progressDialog.setMessage("Making Payment....");
+        progressDialog.show();
         bodyData = getPaytmParams();
 
         new HttpRequest(activity, Constants.CHECKSUM, HttpRequest.Request.POST, bodyData, new HttpResponseCallback() {
@@ -101,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).execute();
+        progressDialog.dismiss();
     }
 
     String getPaytmParams () {
