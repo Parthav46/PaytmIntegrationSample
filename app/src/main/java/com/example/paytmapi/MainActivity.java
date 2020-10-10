@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
                         }).execute();
                     } catch (Exception e) {
                         e.printStackTrace();
+                        if (progressDialog.isShowing()) progressDialog.dismiss();
                     }
                 } else {
                     if (progressDialog.isShowing()) progressDialog.dismiss();
